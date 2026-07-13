@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --color-parchment: #f4e8d0;
+  --color-burgundy: #4a1c2e;
+  --color-burgundy-dark: #2d1119;
+  --color-gold: #c9a227;
+  --color-orange-btn: #e86a17;
+  --color-orange-hover: #d45a0f;
+  --font-display: "Cinzel", serif;
+  --font-body: "Lora", serif;
+}
+
+@layer base {
+  body {
+    @apply min-h-screen bg-gradient-to-b from-burgundy-dark via-burgundy to-burgundy-dark text-parchment;
+    font-family: var(--font-body);
+  }
+}
+
+@layer components {
+  .ornate-border {
+    @apply border-2 border-gold/60 rounded-lg shadow-lg bg-burgundy/80 backdrop-blur-sm;
+    box-shadow: 0 0 20px rgba(201, 162, 39, 0.15), inset 0 0 30px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-orange {
+    @apply bg-orange-btn hover:bg-orange-hover text-white font-semibold px-5 py-2 rounded-md transition-colors cursor-pointer;
+  }
+
+  .btn-gold {
+    @apply bg-gold/20 hover:bg-gold/30 text-gold border border-gold/50 font-semibold px-5 py-2 rounded-md transition-colors cursor-pointer;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-md bg-burgundy-dark/50 border border-gold/40 text-parchment placeholder:text-parchment/50 focus:outline-none focus:border-gold;
+  }
+
+  .card {
+    @apply border-2 border-gold/60 rounded-lg shadow-lg bg-burgundy/80 backdrop-blur-sm p-6;
+    box-shadow: 0 0 20px rgba(201, 162, 39, 0.15), inset 0 0 30px rgba(0, 0, 0, 0.2);
+  }
+}
