@@ -5,8 +5,10 @@ import {
   serial,
   text,
   timestamp,
+  uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -15,13 +17,22 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const books = pgTable("books", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  author: text("author").notNull(),
-  addedByUserId: integer("added_by_user_id").references(() => users.id),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+export const books = pgTable(
+  "books",
+  {
+    id: serial("id").primaryKey(),
+    title: text("title").notNull(),
+    author: text("author").notNull(),
+    addedByUserId: integer("added_by_user_id").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("books_title_author_unique").on(
+      sql`lower(${table.title})`,
+      sql`lower(${table.author})`
+    ),
+  ]
+);
 
 export const quizAttempts = pgTable("quiz_attempts", {
   id: serial("id").primaryKey(),

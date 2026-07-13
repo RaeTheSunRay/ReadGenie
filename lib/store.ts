@@ -52,15 +52,29 @@ let seedPromise: Promise<void> | null = null;
 async function ensureStarterBooks(): Promise<void> {
   if (!seedPromise) {
     seedPromise = (async () => {
-      const existing = await getDb().select({ id: books.id }).from(books).limit(1);
-      if (existing.length > 0) return;
+      for (const book of STARTER_BOOKS) {
+        const [existing] = await getDb()
+          .select({ id: books.id })
+          .from(books)
+          .where(
+            and(
+              sql`lower(${books.title}) = ${book.title.toLowerCase()}`,
+              sql`lower(${books.author}) = ${book.author.toLowerCase()}`
+            )
+          )
+          .limit(1);
 
-      await getDb().insert(books).values(
-        STARTER_BOOKS.map((book) => ({
-          title: book.title,
-          author: book.author,
-        }))
-      );
+        if (existing) continue;
+
+        try {
+          await getDb().insert(books).values({
+            title: book.title,
+            author: book.author,
+          });
+        } catch {
+          // Another instance may have inserted the same starter book.
+        }
+      }
     })().catch((error) => {
       seedPromise = null;
       throw error;
