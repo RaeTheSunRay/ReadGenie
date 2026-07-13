@@ -36,7 +36,7 @@ export type QuizAnswer = {
 };
 
 export const STARTER_BOOKS: Pick<Book, "title" | "author">[] = [
-  { title: "Harry Potter and the Philosopher's Stone", author: "J.K. Rowling" },
+  { title: "Harry Potter and the Sorcerer's Stone", author: "J.K. Rowling" },
   { title: "The Hobbit", author: "J.R.R. Tolkien" },
   { title: "Charlotte's Web", author: "E.B. White" },
   { title: "Percy Jackson and the Lightning Thief", author: "Rick Riordan" },

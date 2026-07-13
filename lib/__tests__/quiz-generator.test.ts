@@ -13,7 +13,7 @@ import { getSeedPlot } from "@/lib/seed-plots";
 import { QUIZ_QUESTION_COUNT } from "@/lib/quiz-config";
 
 const SAMPLE_PLOT = `
-Harry Potter is a young orphan who lives with his aunt and uncle. He discovers he is a wizard on his eleventh birthday. Harry attends Hogwarts School of Witchcraft and Wizardry. He meets his best friends Ron and Hermione on the train journey. The trio uncovers a secret involving the Philosopher's Stone. Harry must face the dark wizard who killed his parents.
+Harry Potter is a young orphan who lives with his aunt and uncle. He discovers he is a wizard on his eleventh birthday. Harry attends Hogwarts School of Witchcraft and Wizardry. He meets his best friends Ron and Hermione on the train journey. The trio uncovers a secret involving the Sorcerer's Stone. Harry must face the dark wizard who killed his parents.
 The novel was published in 1997 and became a bestseller.
 After years of living with the Dursleys, Harry finally learns the truth about his past. Later in the story, he confronts the villain in the school dungeons.
 `;

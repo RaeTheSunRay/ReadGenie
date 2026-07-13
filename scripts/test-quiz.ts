@@ -2,7 +2,7 @@ import { generateQuizQuestions, buildStoryContext } from "../lib/quiz-generator"
 import { getSeedPlot } from "../lib/seed-plots";
 
 const books = [
-  ["Harry Potter and the Philosopher's Stone", "J.K. Rowling"],
+  ["Harry Potter and the Sorcerer's Stone", "J.K. Rowling"],
   ["Wonder", "R.J. Palacio"],
   ["The Hobbit", "J.R.R. Tolkien"],
   ["Charlotte's Web", "E.B. White"],
