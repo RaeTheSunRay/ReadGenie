@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Book ID is required" }, { status: 400 });
   }
 
-  const book = store.getBookById(bookId);
+  const book = await store.getBookById(bookId);
   if (!book) {
     return NextResponse.json({ error: "Book not found" }, { status: 404 });
   }

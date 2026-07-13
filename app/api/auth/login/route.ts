@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const user = store.getUserByEmail(email);
+  const user = await store.getUserByEmail(email);
   if (!user) {
     return NextResponse.json(
       { error: "Invalid email or password" },

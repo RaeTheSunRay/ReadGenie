@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   const session = await getSession();
   const quote = getRandomQuote();
-  const allBooks = store.getBooks();
+  const allBooks = await store.getBooks();
 
   return (
     <main>

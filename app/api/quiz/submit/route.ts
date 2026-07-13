@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing quiz data" }, { status: 400 });
   }
 
-  const book = store.getBookById(bookId);
+  const book = await store.getBookById(bookId);
   if (!book) {
     return NextResponse.json({ error: "Book not found" }, { status: 404 });
   }
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   const results = scoreQuiz(fullQuestions, answers);
   const score = results.filter((r) => r.isCorrect).length;
 
-  store.createQuizAttempt(
+  await store.createQuizAttempt(
     session.id,
     bookId,
     score,

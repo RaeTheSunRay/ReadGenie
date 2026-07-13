@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth";
 import { store } from "@/lib/store";
 
 export async function GET() {
-  return NextResponse.json(store.getBooks());
+  return NextResponse.json(await store.getBooks());
 }
 
 export async function POST(request: Request) {
@@ -25,13 +25,13 @@ export async function POST(request: Request) {
   const trimmedTitle = title.trim();
   const trimmedAuthor = author.trim();
 
-  if (store.bookExists(trimmedTitle, trimmedAuthor)) {
+  if (await store.bookExists(trimmedTitle, trimmedAuthor)) {
     return NextResponse.json(
       { error: "This book and author already exist" },
       { status: 409 }
     );
   }
 
-  const book = store.createBook(trimmedTitle, trimmedAuthor, session.id);
+  const book = await store.createBook(trimmedTitle, trimmedAuthor, session.id);
   return NextResponse.json(book);
 }

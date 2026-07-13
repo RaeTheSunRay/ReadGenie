@@ -848,15 +848,14 @@ export async function generateQuizQuestions(
   bookTitle: string,
   author: string
 ): Promise<QuizQuestion[]> {
-  let storyText =
-    getSeedPlot(bookTitle, author) ??
-    getCachedPlot(bookTitle, author) ??
-    (await fetchBookStoryText(bookTitle, author));
+  const seed = getSeedPlot(bookTitle, author);
+  const cached = seed ? null : await getCachedPlot(bookTitle, author);
+  let storyText = seed ?? cached ?? (await fetchBookStoryText(bookTitle, author));
 
   if (!storyText) return [];
 
-  if (!getSeedPlot(bookTitle, author) && !getCachedPlot(bookTitle, author)) {
-    setCachedPlot(bookTitle, author, storyText);
+  if (!seed && !cached) {
+    await setCachedPlot(bookTitle, author, storyText);
   }
 
   const context = buildStoryContext(storyText, bookTitle);

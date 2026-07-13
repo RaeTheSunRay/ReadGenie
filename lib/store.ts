@@ -1,5 +1,6 @@
-import fs from "fs";
-import path from "path";
+import { and, desc, eq, sql } from "drizzle-orm";
+import { getDb } from "@/lib/db";
+import { books, quizAnswers, quizAttempts, users } from "@/lib/db/schema";
 
 export type User = {
   id: number;
@@ -34,22 +35,7 @@ export type QuizAnswer = {
   isCorrect: boolean;
 };
 
-type Database = {
-  users: User[];
-  books: Book[];
-  quizAttempts: QuizAttempt[];
-  quizAnswers: QuizAnswer[];
-  nextIds: {
-    users: number;
-    books: number;
-    quizAttempts: number;
-    quizAnswers: number;
-  };
-};
-
-const DB_PATH = path.join(process.cwd(), "data.json");
-
-const STARTER_BOOKS: Pick<Book, "title" | "author">[] = [
+export const STARTER_BOOKS: Pick<Book, "title" | "author">[] = [
   { title: "Harry Potter and the Philosopher's Stone", author: "J.K. Rowling" },
   { title: "The Hobbit", author: "J.R.R. Tolkien" },
   { title: "Charlotte's Web", author: "E.B. White" },
@@ -57,180 +43,212 @@ const STARTER_BOOKS: Pick<Book, "title" | "author">[] = [
   { title: "Wonder", author: "R.J. Palacio" },
 ];
 
-const STARTER_AUTHOR_MAP = Object.fromEntries(
-  STARTER_BOOKS.map((book) => [book.title, book.author])
-);
-
-const KNOWN_AUTHORS: Record<string, string> = {
-  "Train I Ride": "Andrea Beaty",
-  ...STARTER_AUTHOR_MAP,
-};
-
-function defaultDb(): Database {
-  return {
-    users: [],
-    books: STARTER_BOOKS.map((book, i) => ({
-      id: i + 1,
-      title: book.title,
-      author: book.author,
-      createdAt: new Date().toISOString(),
-    })),
-    quizAttempts: [],
-    quizAnswers: [],
-    nextIds: {
-      users: 1,
-      books: STARTER_BOOKS.length + 1,
-      quizAttempts: 1,
-      quizAnswers: 1,
-    },
-  };
+function toIso(value: Date | string): string {
+  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
 }
 
-function migrateBook(book: Book & { author?: string }): Book {
-  const knownAuthor = KNOWN_AUTHORS[book.title];
-  if (book.author && book.author !== "Unknown Author") {
-    return book as Book;
-  }
-  return { ...book, author: knownAuthor ?? book.author ?? "Unknown Author" };
-}
+let seedPromise: Promise<void> | null = null;
 
-function readDb(): Database {
-  if (!fs.existsSync(DB_PATH)) {
-    const db = defaultDb();
-    writeDb(db);
-    return db;
-  }
+async function ensureStarterBooks(): Promise<void> {
+  if (!seedPromise) {
+    seedPromise = (async () => {
+      const existing = await getDb().select({ id: books.id }).from(books).limit(1);
+      if (existing.length > 0) return;
 
-  const raw = JSON.parse(fs.readFileSync(DB_PATH, "utf-8")) as Database;
-  const migratedBooks = raw.books.map(migrateBook);
-  const needsSave = raw.books.some((book, i) => {
-    const migrated = migratedBooks[i];
-    return book.author !== migrated.author;
-  });
-
-  if (needsSave) {
-    writeDb({ ...raw, books: migratedBooks });
+      await getDb().insert(books).values(
+        STARTER_BOOKS.map((book) => ({
+          title: book.title,
+          author: book.author,
+        }))
+      );
+    })().catch((error) => {
+      seedPromise = null;
+      throw error;
+    });
   }
 
-  return { ...raw, books: migratedBooks };
-}
-
-function writeDb(db: Database): void {
-  fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
+  await seedPromise;
 }
 
 export const store = {
-  getUsers() {
-    return readDb().users;
+  async getUsers(): Promise<User[]> {
+    await ensureStarterBooks();
+    const rows = await getDb().select().from(users);
+    return rows.map((row) => ({
+      id: row.id,
+      email: row.email,
+      passwordHash: row.passwordHash,
+      createdAt: toIso(row.createdAt),
+    }));
   },
 
-  getUserByEmail(email: string) {
-    return readDb().users.find((u) => u.email === email.toLowerCase()) ?? null;
-  },
+  async getUserByEmail(email: string): Promise<User | null> {
+    await ensureStarterBooks();
+    const [row] = await getDb()
+      .select()
+      .from(users)
+      .where(eq(users.email, email.toLowerCase()))
+      .limit(1);
 
-  createUser(email: string, passwordHash: string): User {
-    const db = readDb();
-    const user: User = {
-      id: db.nextIds.users++,
-      email: email.toLowerCase(),
-      passwordHash,
-      createdAt: new Date().toISOString(),
+    if (!row) return null;
+    return {
+      id: row.id,
+      email: row.email,
+      passwordHash: row.passwordHash,
+      createdAt: toIso(row.createdAt),
     };
-    db.users.push(user);
-    writeDb(db);
-    return user;
   },
 
-  getBooks() {
-    return readDb().books.sort((a, b) =>
-      a.title.localeCompare(b.title) || a.author.localeCompare(b.author)
-    );
-  },
+  async createUser(email: string, passwordHash: string): Promise<User> {
+    await ensureStarterBooks();
+    const [row] = await getDb()
+      .insert(users)
+      .values({
+        email: email.toLowerCase(),
+        passwordHash,
+      })
+      .returning();
 
-  getBookById(id: number) {
-    return readDb().books.find((b) => b.id === id) ?? null;
-  },
-
-  createBook(title: string, author: string, addedByUserId?: number): Book {
-    const db = readDb();
-    const book: Book = {
-      id: db.nextIds.books++,
-      title,
-      author,
-      addedByUserId,
-      createdAt: new Date().toISOString(),
+    return {
+      id: row.id,
+      email: row.email,
+      passwordHash: row.passwordHash,
+      createdAt: toIso(row.createdAt),
     };
-    db.books.push(book);
-    writeDb(db);
-    return book;
   },
 
-  bookExists(title: string, author: string) {
-    return readDb().books.some(
-      (b) =>
-        b.title.toLowerCase() === title.toLowerCase() &&
-        b.author.toLowerCase() === author.toLowerCase()
-    );
+  async getBooks(): Promise<Book[]> {
+    await ensureStarterBooks();
+    const rows = await getDb().select().from(books).orderBy(books.title, books.author);
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      author: row.author,
+      addedByUserId: row.addedByUserId ?? undefined,
+      createdAt: toIso(row.createdAt),
+    }));
   },
 
-  createQuizAttempt(
+  async getBookById(id: number): Promise<Book | null> {
+    await ensureStarterBooks();
+    const [row] = await getDb().select().from(books).where(eq(books.id, id)).limit(1);
+    if (!row) return null;
+    return {
+      id: row.id,
+      title: row.title,
+      author: row.author,
+      addedByUserId: row.addedByUserId ?? undefined,
+      createdAt: toIso(row.createdAt),
+    };
+  },
+
+  async createBook(
+    title: string,
+    author: string,
+    addedByUserId?: number
+  ): Promise<Book> {
+    await ensureStarterBooks();
+    const [row] = await getDb()
+      .insert(books)
+      .values({
+        title,
+        author,
+        addedByUserId: addedByUserId ?? null,
+      })
+      .returning();
+
+    return {
+      id: row.id,
+      title: row.title,
+      author: row.author,
+      addedByUserId: row.addedByUserId ?? undefined,
+      createdAt: toIso(row.createdAt),
+    };
+  },
+
+  async bookExists(title: string, author: string): Promise<boolean> {
+    await ensureStarterBooks();
+    const [row] = await getDb()
+      .select({ id: books.id })
+      .from(books)
+      .where(
+        and(
+          sql`lower(${books.title}) = ${title.toLowerCase()}`,
+          sql`lower(${books.author}) = ${author.toLowerCase()}`
+        )
+      )
+      .limit(1);
+
+    return !!row;
+  },
+
+  async createQuizAttempt(
     userId: number,
     bookId: number,
     score: number,
     totalQuestions: number,
     answers: Omit<QuizAnswer, "id" | "attemptId">[]
-  ): QuizAttempt {
-    const db = readDb();
-    const attempt: QuizAttempt = {
-      id: db.nextIds.quizAttempts++,
-      userId,
-      bookId,
-      score,
-      totalQuestions,
-      completedAt: new Date().toISOString(),
-    };
-    db.quizAttempts.push(attempt);
+  ): Promise<QuizAttempt> {
+    await ensureStarterBooks();
 
-    for (const answer of answers) {
-      db.quizAnswers.push({
-        id: db.nextIds.quizAnswers++,
-        attemptId: attempt.id,
-        ...answer,
-      });
+    const [attempt] = await getDb()
+      .insert(quizAttempts)
+      .values({
+        userId,
+        bookId,
+        score,
+        totalQuestions,
+      })
+      .returning();
+
+    if (answers.length > 0) {
+      await getDb().insert(quizAnswers).values(
+        answers.map((answer) => ({
+          attemptId: attempt.id,
+          questionText: answer.questionText,
+          userAnswer: answer.userAnswer,
+          correctAnswer: answer.correctAnswer,
+          isCorrect: answer.isCorrect,
+        }))
+      );
     }
 
-    writeDb(db);
-    return attempt;
+    return {
+      id: attempt.id,
+      userId: attempt.userId,
+      bookId: attempt.bookId,
+      score: attempt.score,
+      totalQuestions: attempt.totalQuestions,
+      completedAt: toIso(attempt.completedAt),
+    };
   },
 
-  getLeaderboard(bookId?: number) {
-    const db = readDb();
-    let attempts = [...db.quizAttempts];
+  async getLeaderboard(bookId?: number) {
+    await ensureStarterBooks();
 
-    if (bookId) {
-      attempts = attempts.filter((a) => a.bookId === bookId);
-    }
-
-    return attempts
-      .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        return (
-          new Date(b.completedAt).getTime() -
-          new Date(a.completedAt).getTime()
-        );
+    const rows = await getDb()
+      .select({
+        score: quizAttempts.score,
+        totalQuestions: quizAttempts.totalQuestions,
+        completedAt: quizAttempts.completedAt,
+        email: users.email,
+        bookTitle: books.title,
+        bookAuthor: books.author,
       })
-      .slice(0, 50)
-      .map((attempt) => {
-        const user = db.users.find((u) => u.id === attempt.userId);
-        const book = db.books.find((b) => b.id === attempt.bookId);
-        return {
-          score: attempt.score,
-          totalQuestions: attempt.totalQuestions,
-          completedAt: attempt.completedAt,
-          email: user?.email ?? "unknown",
-          bookTitle: book?.title ?? "Unknown",
-          bookAuthor: book?.author ?? "Unknown",
-        };
-      });
+      .from(quizAttempts)
+      .innerJoin(users, eq(users.id, quizAttempts.userId))
+      .innerJoin(books, eq(books.id, quizAttempts.bookId))
+      .where(bookId ? eq(quizAttempts.bookId, bookId) : undefined)
+      .orderBy(desc(quizAttempts.score), desc(quizAttempts.completedAt))
+      .limit(50);
+
+    return rows.map((row) => ({
+      score: row.score,
+      totalQuestions: row.totalQuestions,
+      completedAt: toIso(row.completedAt),
+      email: row.email,
+      bookTitle: row.bookTitle,
+      bookAuthor: row.bookAuthor,
+    }));
   },
 };

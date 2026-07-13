@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (store.getUserByEmail(email)) {
+  if (await store.getUserByEmail(email)) {
     return NextResponse.json(
       { error: "An account with this email already exists" },
       { status: 409 }
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   }
 
   const passwordHash = await hashPassword(password);
-  const user = store.createUser(email, passwordHash);
+  const user = await store.createUser(email, passwordHash);
 
   return NextResponse.json({ id: user.id, email: user.email });
 }

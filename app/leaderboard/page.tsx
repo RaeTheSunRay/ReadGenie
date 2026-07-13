@@ -15,8 +15,8 @@ export default async function LeaderboardPage({
   const params = await searchParams;
   const bookIdFilter = params.bookId ? Number(params.bookId) : null;
 
-  const allBooks = store.getBooks();
-  const entries = store.getLeaderboard(bookIdFilter ?? undefined);
+  const allBooks = await store.getBooks();
+  const entries = await store.getLeaderboard(bookIdFilter ?? undefined);
 
   return (
     <main>

@@ -8,10 +8,14 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "bcryptjs": "^3.0.2",
+    "drizzle-orm": "^0.45.2",
     "jose": "^6.0.11",
     "next": "^15.3.4",
     "react": "^19.1.0",
@@ -24,6 +28,8 @@
     "@types/node": "^22.15.32",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9.29.0",
     "eslint-config-next": "^15.3.4",
     "tailwindcss": "^4.1.10",

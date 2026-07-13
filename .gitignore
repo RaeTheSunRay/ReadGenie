@@ -38,6 +38,7 @@ yarn-error.log*
 data.json
 plot-cache.json
 readgenie.db
+drizzle/meta
 
 # typescript
 *.tsbuildinfo
