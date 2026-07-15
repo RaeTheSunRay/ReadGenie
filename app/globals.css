@@ -1,43 +1,70 @@
 @import "tailwindcss";
 
 @theme {
-  --color-parchment: #f4e8d0;
-  --color-burgundy: #4a1c2e;
-  --color-burgundy-dark: #2d1119;
-  --color-gold: #c9a227;
-  --color-orange-btn: #e86a17;
-  --color-orange-hover: #d45a0f;
-  --font-display: "Cinzel", serif;
-  --font-body: "Lora", serif;
+  --color-parchment: #16324f;
+  --color-burgundy: #ffffff;
+  --color-burgundy-dark: #d9f0ff;
+  --color-gold: #0f9e8f;
+  --color-orange-btn: #ff6a3d;
+  --color-orange-hover: #ef5528;
+  --color-sky: #7dd3fc;
+  --color-mint: #5eead4;
+  --color-lemon: #fde047;
+  --color-shelf: #c48a4a;
+  --font-display: "Fredoka", sans-serif;
+  --font-body: "Nunito", sans-serif;
 }
 
 @layer base {
   body {
-    @apply min-h-screen bg-gradient-to-b from-burgundy-dark via-burgundy to-burgundy-dark text-parchment;
+    @apply min-h-screen text-parchment;
     font-family: var(--font-body);
+    background:
+      radial-gradient(circle at 12% 18%, rgba(253, 224, 71, 0.45), transparent 32%),
+      radial-gradient(circle at 88% 10%, rgba(255, 106, 61, 0.28), transparent 28%),
+      radial-gradient(circle at 80% 70%, rgba(20, 184, 166, 0.25), transparent 35%),
+      linear-gradient(180deg, #b9e9ff 0%, #e8f9ff 42%, #fff7ea 100%);
+    background-attachment: fixed;
   }
 }
 
 @layer components {
   .ornate-border {
-    @apply border-2 border-gold/60 rounded-lg shadow-lg bg-burgundy/80 backdrop-blur-sm;
-    box-shadow: 0 0 20px rgba(201, 162, 39, 0.15), inset 0 0 30px rgba(0, 0, 0, 0.2);
+    @apply border-2 border-white/80 rounded-2xl shadow-lg bg-white/80 backdrop-blur-sm;
+    box-shadow: 0 18px 40px rgba(22, 50, 79, 0.12);
   }
 
   .btn-orange {
-    @apply bg-orange-btn hover:bg-orange-hover text-white font-semibold px-5 py-2 rounded-md transition-colors cursor-pointer;
+    @apply bg-orange-btn hover:bg-orange-hover text-white font-bold px-5 py-2.5 rounded-full transition-all cursor-pointer shadow-md hover:shadow-lg hover:-translate-y-0.5;
   }
 
   .btn-gold {
-    @apply bg-gold/20 hover:bg-gold/30 text-gold border border-gold/50 font-semibold px-5 py-2 rounded-md transition-colors cursor-pointer;
+    @apply bg-gold hover:brightness-110 text-white border border-transparent font-bold px-5 py-2.5 rounded-full transition-all cursor-pointer shadow-md hover:shadow-lg hover:-translate-y-0.5;
   }
 
   .input-field {
-    @apply w-full px-4 py-3 rounded-md bg-burgundy-dark/50 border border-gold/40 text-parchment placeholder:text-parchment/50 focus:outline-none focus:border-gold;
+    @apply w-full px-4 py-3 rounded-2xl bg-white border-2 border-sky/60 text-parchment placeholder:text-parchment/45 focus:outline-none focus:border-orange-btn shadow-sm;
   }
 
   .card {
-    @apply border-2 border-gold/60 rounded-lg shadow-lg bg-burgundy/80 backdrop-blur-sm p-6;
-    box-shadow: 0 0 20px rgba(201, 162, 39, 0.15), inset 0 0 30px rgba(0, 0, 0, 0.2);
+    @apply border-2 border-white rounded-3xl shadow-lg bg-white/85 backdrop-blur-sm p-6;
+    box-shadow: 0 18px 40px rgba(22, 50, 79, 0.12);
+  }
+
+  .home-brand {
+    animation: brand-pop 0.8s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+  }
+
+}
+
+@keyframes brand-pop {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
+

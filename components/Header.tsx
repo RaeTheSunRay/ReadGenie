@@ -5,14 +5,17 @@ export async function Header() {
   const session = await getSession();
 
   return (
-    <header className="flex justify-between items-center p-6">
-      <Link href="/" className="text-gold/80 hover:text-gold text-sm tracking-widest uppercase">
+    <header className="relative z-20 flex justify-between items-center p-5 md:p-6">
+      <Link
+        href="/"
+        className="text-parchment/70 hover:text-parchment text-sm font-extrabold tracking-widest uppercase"
+      >
         Home
       </Link>
       <div className="flex gap-3">
         {session ? (
           <>
-            <span className="text-parchment/70 text-sm self-center hidden sm:inline">
+            <span className="text-parchment/70 text-sm self-center hidden sm:inline font-semibold">
               {session.email}
             </span>
             <form action="/api/auth/logout" method="POST">

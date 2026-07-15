@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
-import { Cinzel, Lora } from "next/font/google";
+import { Fredoka, Nunito } from "next/font/google";
 import "./globals.css";
 
-const cinzel = Cinzel({
+const fredoka = Fredoka({
   subsets: ["latin"],
   variable: "--font-display",
+  weight: ["500", "600", "700"],
 });
 
-const lora = Lora({
+const nunito = Nunito({
   subsets: ["latin"],
   variable: "--font-body",
+  weight: ["500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -24,9 +26,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${cinzel.variable} ${lora.variable} antialiased`}>
+      <body className={`${fredoka.variable} ${nunito.variable} antialiased`}>
         <div className="min-h-screen relative overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_top,_var(--color-gold)_0%,_transparent_50%)]" />
+          <div className="pointer-events-none absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.7),_transparent_45%)]" />
           <div className="relative z-10">{children}</div>
         </div>
       </body>
