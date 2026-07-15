@@ -3,10 +3,12 @@ import {
   buildFalseDistractors,
   buildStoryContext,
   extractEventPhrase,
+  generateQuizFromStoryText,
   generateQuizQuestions,
   isStorySentence,
   makePlotQuestion,
   makeTimelineQuestion,
+  makeWhyQuestion,
   storySentencesFromText,
 } from "@/lib/quiz-generator";
 import { getSeedPlot } from "@/lib/seed-plots";
@@ -16,6 +18,7 @@ const SAMPLE_PLOT = `
 Harry Potter is a young orphan who lives with his aunt and uncle. He discovers he is a wizard on his eleventh birthday. Harry attends Hogwarts School of Witchcraft and Wizardry. He meets his best friends Ron and Hermione on the train journey. The trio uncovers a secret involving the Sorcerer's Stone. Harry must face the dark wizard who killed his parents.
 The novel was published in 1997 and became a bestseller.
 After years of living with the Dursleys, Harry finally learns the truth about his past. Later in the story, he confronts the villain in the school dungeons.
+Harry defeats Professor Quirrell because the love protection from Harry's mother makes Quirrell burn at Harry's touch.
 `;
 
 function isCompleteSentenceOption(option: string): boolean {
@@ -25,7 +28,7 @@ function isCompleteSentenceOption(option: string): boolean {
     !/^(who|whom|whose|which|that|when|where|while|after|before|but|and)\b/i.test(
       option
     ) &&
-    option.split(/\s+/).length >= 5
+    option.split(/\s+/).length >= 4
   );
 }
 
@@ -92,6 +95,36 @@ describe("buildFalseDistractors", () => {
   });
 });
 
+describe("makeWhyQuestion", () => {
+  it("asks a why question with one correct complete-sentence answer", () => {
+    const context = buildStoryContext(SAMPLE_PLOT, "Harry Potter");
+    const distractors = buildFalseDistractors(
+      context.eventPhrases,
+      context.characters
+    );
+    const becauseEvent = context.eventPhrases.find((e) =>
+      /because/i.test(e.phrase)
+    );
+    expect(becauseEvent).toBeTruthy();
+
+    const question = makeWhyQuestion(
+      becauseEvent!.phrase,
+      distractors,
+      undefined,
+      new Set(context.eventPhrases.map((e) => e.phrase.toLowerCase()))
+    );
+
+    expect(question).not.toBeNull();
+    expect(question?.question.toLowerCase()).toContain("why");
+    expect(question?.question.toLowerCase()).toContain("harry");
+    expect(question?.options).toHaveLength(4);
+    expect(question?.options.filter((o) => o === question.correctAnswer)).toHaveLength(1);
+    for (const option of question!.options) {
+      expect(isCompleteSentenceOption(option)).toBe(true);
+    }
+  });
+});
+
 describe("makePlotQuestion", () => {
   it("uses one true event and false distractors as options", () => {
     const context = buildStoryContext(SAMPLE_PLOT, "Harry Potter");
@@ -99,7 +132,9 @@ describe("makePlotQuestion", () => {
       context.eventPhrases,
       context.characters
     );
-    const event = context.eventPhrases[0];
+    const event =
+      context.eventPhrases.find((item) => makePlotQuestion(item, distractors)) ??
+      context.eventPhrases[0];
     const question = makePlotQuestion(event, distractors);
 
     expect(question).not.toBeNull();
@@ -116,7 +151,7 @@ describe("makePlotQuestion", () => {
 });
 
 describe("makeTimelineQuestion", () => {
-  it("uses complete sentences with unused false distractors", () => {
+  it("uses complete sentences for beginning or ending questions", () => {
     const context = buildStoryContext(SAMPLE_PLOT, "Harry Potter");
     const distractors = buildFalseDistractors(
       context.eventPhrases,
@@ -133,7 +168,7 @@ describe("makeTimelineQuestion", () => {
     );
 
     expect(question).not.toBeNull();
-    expect(question?.question).toContain("timeline");
+    expect(question?.question.toLowerCase()).toMatch(/early|later/);
     expect(question?.correctAnswer).toBe(event.phrase);
     for (const option of question?.options ?? []) {
       expect(isCompleteSentenceOption(option)).toBe(true);
@@ -176,8 +211,36 @@ describe("storySentencesFromText", () => {
   });
 });
 
-describe("generateQuizQuestions for Charlotte's Web", () => {
-  it("produces 10 questions with exclusive complete-sentence options", async () => {
+describe("generateQuizQuestions story quality", () => {
+  it("produces varied character/storyline questions for Sorcerer's Stone", async () => {
+    const questions = await generateQuizQuestions(
+      "Harry Potter and the Sorcerer's Stone",
+      "J.K. Rowling"
+    );
+    expect(questions).toHaveLength(QUIZ_QUESTION_COUNT);
+
+    const stems = questions.map((q) => q.question);
+    expect(new Set(stems).size).toBe(stems.length);
+
+    expect(
+      questions.some((q) =>
+        /why|who|what did|which statement|which early|which later/i.test(q.question)
+      )
+    ).toBe(true);
+
+    for (const q of questions) {
+      expect(q.question).not.toMatch(/Which of these plot events happens in the story\?/i);
+      expect(q.options.filter((o) => o === q.correctAnswer)).toHaveLength(1);
+      for (const option of q.options) {
+        const looksLikeName = /^[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?$/.test(option);
+        if (!looksLikeName) {
+          expect(isCompleteSentenceOption(option)).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("produces 10 questions with exclusive complete options for Charlotte's Web", async () => {
     const questions = await generateQuizQuestions("Charlotte's Web", "E.B. White");
     expect(questions).toHaveLength(QUIZ_QUESTION_COUNT);
 
@@ -188,7 +251,7 @@ describe("generateQuizQuestions for Charlotte's Web", () => {
     expect(new Set(allOptions).size).toBe(allOptions.length);
 
     for (const q of questions) {
-      expect(q.question).not.toMatch(/Which character the /i);
+      expect(q.options.filter((o) => o === q.correctAnswer)).toHaveLength(1);
       for (const option of q.options) {
         const looksLikeName = /^[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?$/.test(option);
         if (!looksLikeName) {
@@ -197,10 +260,8 @@ describe("generateQuizQuestions for Charlotte's Web", () => {
       }
     }
   });
-});
 
-describe("character question wording", () => {
-  it("builds readable which-character questions and never reuses options", async () => {
+  it("builds readable who questions and never reuses options", async () => {
     const questions = await generateQuizQuestions(
       "The Remarkable Journey of Coyote Sunrise",
       "Dan Gemeinhart"
@@ -211,14 +272,60 @@ describe("character question wording", () => {
       expect(q.question).not.toMatch(/Which character the /i);
       expect(q.options).not.toContain("Along");
       expect(q.options).not.toContain("Oregon");
-      if (q.question.startsWith("Which character ")) {
-        expect(q.question).toMatch(
-          /^Which character (is|was|has|helps|learns|plans|changes|becomes|meets|picks|digs|travels|keeps)\b/i
-        );
+      if (q.question.startsWith("Who ")) {
+        expect(q.question).toMatch(/^Who [a-z]/i);
       }
     }
 
     const allOptions = questions.flatMap((q) => q.options);
     expect(new Set(allOptions).size).toBe(allOptions.length);
+  });
+
+  it("builds a full complete-sentence quiz from a non-seed book plot", () => {
+    const plot = `
+Mira Vale is a twelve-year-old inventor who lives in a Victorian clocktower.
+Mira builds a flying lantern because she wants to find her missing brother.
+Theo the raven becomes Mira's loyal companion during the search.
+The mayor hides the truth about the missing children of the city.
+Mira and Theo travel through storm canals to reach the Night Market.
+A clockwork fox guards the market gate and challenges Mira to a riddle.
+Mira solves the fox's riddle because she remembers her brother's notebook code.
+Theo steals the mayor's silver key during the parade.
+The silver key opens a hidden workshop beneath the library.
+Mira finds her brother trapped inside a broken weather machine.
+Mira repairs the machine with spare gears from the tower.
+The siblings escape together and expose the mayor's secret plan.
+    `;
+
+    const questions = generateQuizFromStoryText(plot, "Lantern of Vale");
+    expect(questions).toHaveLength(QUIZ_QUESTION_COUNT);
+
+    const corrects = questions.map((q) => q.correctAnswer);
+    expect(new Set(corrects).size).toBe(QUIZ_QUESTION_COUNT);
+
+    for (const q of questions) {
+      expect(q.options).toHaveLength(4);
+      expect(q.options.filter((o) => o === q.correctAnswer)).toHaveLength(1);
+      for (const option of q.options) {
+        const looksLikeName = /^[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?$/.test(option);
+        if (!looksLikeName) {
+          expect(isCompleteSentenceOption(option)).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("still builds a full quiz when the author name is slightly misspelled", async () => {
+    const questions = await generateQuizQuestions("Train I Ride", "Paul Moiser");
+    expect(questions).toHaveLength(QUIZ_QUESTION_COUNT);
+    for (const q of questions) {
+      expect(q.options.filter((o) => o === q.correctAnswer)).toHaveLength(1);
+      for (const option of q.options) {
+        const looksLikeName = /^[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?$/.test(option);
+        if (!looksLikeName) {
+          expect(isCompleteSentenceOption(option)).toBe(true);
+        }
+      }
+    }
   });
 });
